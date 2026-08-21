@@ -2,16 +2,13 @@ import json
 import os
 import requests
 
-def record_email(email):
+def record_email(name, email):
     with open("emails.txt", "a") as f:
-        f.write(email + "\n")
+        f.write(f"{name}:{email}" + "\n")
 
     return "OK"
 
-def record_unknown_question(email):
-    with open("emails.txt", "a") as f:
-        f.write(email + "\n")
-
+def record_unknown_question():
     return "OK"
 
 tool_map = {
@@ -31,7 +28,7 @@ def handle_tool_calls(tool_calls):
     return results
 
 tool_email = {
-    "name":"record-email-tool",
+    "name":"record_email",
     "description":"Record that a user provided their email address",
     "parameters":{
         "type":"object",
@@ -43,7 +40,7 @@ tool_email = {
 }
 
 tool_unknown_question = {
-    "name":"record-unknown-question-tool",
+    "name":"record_unknown_question",
     "description":"Always use this tool to record any question that couldn't be answered as you didn't know the answer",
     "parameters":{
         "type":"object",
