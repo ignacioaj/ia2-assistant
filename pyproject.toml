@@ -7,7 +7,12 @@ authors = [
     { name = "ignacioaj", email = "ignacioatencia@gmail.com" }
 ]
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "fastapi",
+    "openai",
+    "python-dotenv",
+    "uvicorn",
+]
 
 [project.scripts]
 career-twin = "career_twin:main"
