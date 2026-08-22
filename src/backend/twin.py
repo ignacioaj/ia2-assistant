@@ -1,6 +1,6 @@
 from openai import OpenAI
-from assistant.context import TWIN_INSTRUCTIONS
-# from assistant.tools import tools, handle_tool_calls
+from backend.context import TWIN_INSTRUCTIONS
+# from backend.tools import tools, handle_tool_calls
 import gradio as gr
 from dotenv import load_dotenv
 
@@ -24,7 +24,7 @@ def chat(message, history):
             "content": [
                 {
                     "type": "input_text" if msg["role"] == "user" else "output_text",
-                    "text": msg["content"][0]["text"]
+                    "text": msg["content"]
                 }
             ]
         }
@@ -53,14 +53,27 @@ def chat(message, history):
     #         tools=tools
     #     )
 
-    return response.output_text
+    response_text = response.output_text
+
+    updated_history = history + [
+        {
+            "role": "user",
+            "content": message
+        },
+        {
+            "role": "assistant",
+            "content": response_text
+        }
+    ]
+
+    return response_text, updated_history
 
 
-demo = gr.ChatInterface(
-    fn=chat,
-    title="IA² — Ignacio's Career Twin",
-    description="Ask me anything about Ignacio's professional background.",
-)
+#demo = gr.ChatInterface(
+#    fn=chat,
+#    title="IA² — Ignacio's Career Twin",
+#    description="Ask me anything about Ignacio's professional background.",
+#)
 
-if __name__ == "__main__":
-    demo.launch()
+#if __name__ == "__main__":
+#    demo.launch()

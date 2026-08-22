@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from assistant.prompts import TWIN_SYSTEM_PROMPT
+from backend.prompts import TWIN_SYSTEM_PROMPT
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DOCS_DIR = BASE_DIR / "docs"
