@@ -1,7 +1,7 @@
 from openai import OpenAI
 from backend.context import TWIN_INSTRUCTIONS
 # from backend.tools import tools, handle_tool_calls
-import gradio as gr
+# import gradio as gr
 from dotenv import load_dotenv
 
 load_dotenv()
