@@ -386,3 +386,7 @@ The intended profile is increasingly **T-shaped**:
 * Meaningful depth in one or two technical or domain capabilities.
 
 The next stages should strengthen software engineering foundations, deepen AI/data capabilities, gain practical AI experience, and progressively connect those capabilities with scientific or healthcare problems while preserving future optionality.
+---
+## 11. Contact
+
+LinkedIn: https://www.linkedin.com/in/ignacio-atencia/
