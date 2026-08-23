@@ -1,6 +1,7 @@
 from openai import OpenAI
-from backend.context import TWIN_INSTRUCTIONS
 from dotenv import load_dotenv
+from backend.context import TWIN_INSTRUCTIONS
+from backend.pricing import log_usage
 
 load_dotenv()
 
@@ -10,7 +11,6 @@ MAX_HISTORY_MESSAGES = 20
 openai = OpenAI()
 
 def chat(message, history):
-    print(history, flush=True)
     history = history[-MAX_HISTORY_MESSAGES:]
 
     input_messages = [
@@ -35,6 +35,8 @@ def chat(message, history):
         instructions=TWIN_INSTRUCTIONS,
         input=input_messages
     )
+
+    log_usage(MODEL_NAME, response.usage)
 
     response_text = response.output_text
 
