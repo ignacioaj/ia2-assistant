@@ -1,55 +1,131 @@
 import json
-import os
-import requests
+
+from backend.context import load_text_file
+
+PROFILE_SECTIONS = {
+    "projects": "projects.md",
+    "interests": "interests.md",
+    "other": "extended_profile.md",
+}
+
+# ============================================================
+# TOOL TRIGGERS
+# ============================================================
+
+tool_retrieve_more_info = {
+    "name": "retrieve_more_info",
+    "description": (
+        "Retrieve additional authoritative information about Ignacio "
+        "from his extended professional profile. "
+        "Use this tool ONLY when the core profile does not contain "
+        "enough information to answer a question specifically about "
+        "Ignacio, his background, career, projects, interests, skills, "
+        "experience, or other professional/personal profile information. "
+        "Choose 'projects' for questions about Ignacio's projects, "
+        "'interests' for questions about Ignacio's interests, and "
+        "'other' for other relevant information about Ignacio that is "
+        "not covered by projects or interests. "
+        "Do NOT use this tool for general knowledge, unrelated questions, "
+        "or information that can be answered without knowing more about Ignacio."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "section": {
+                "type": "string",
+                "description": "The profile section to retrieve.",
+                "enum": [
+                    "projects",
+                    "interests",
+                    "other",
+                ],
+            }
+        },
+        "required": ["section"],
+        "additionalProperties": False,
+    },
+}
+
+tool_email = {
+    "name": "record_email",
+    "description": "Record that a user provided their email address",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "name": {
+                "type": "string",
+                "description": "The user's name, if they provided it",
+            },
+            "email": {
+                "type": "string",
+                "description": "The email address of this user",
+            },
+        },
+        "required": ["email"],
+        "additionalProperties": False,
+    },
+}
+
+
+# ============================================================
+# TOOL FUNCTIONS
+# ============================================================
 
 def record_email(name, email):
     with open("emails.txt", "a") as f:
-        f.write(f"{name}:{email}" + "\n")
+        f.write(f"{name}:{email}\n")
 
     return "OK"
 
-def record_unknown_question():
-    return "OK"
+def retrieve_more_info(section: str) -> str:
+    filename = PROFILE_SECTIONS.get(section)
+
+    if not filename:
+        return f"Unknown profile section: {section}"
+
+    return load_text_file(filename)
 
 tool_map = {
-    "record_email":record_email,
-    "record_unknown_question":record_unknown_question
+    "retrieve_more_info": retrieve_more_info,
+    "record_email": record_email,
 }
+
+# ============================================================
+# TOOL CALL HANDLER
+# ============================================================
 
 def handle_tool_calls(tool_calls):
     results = []
+
     for tool_call in tool_calls:
-        tool_name = tool_call.function.name
+        tool_name = tool_call.name
         arguments = json.loads(tool_call.arguments)
-        print(f"Tool called {tool_name}", flush=True)
+
         tool = tool_map.get(tool_name)
-        result = tool(**arguments) if tool else 'No tool found'
-        results.append({"role": "tool", "content": json.dumps(result), "tool_call_id": tool_call.id})
+
+        result = tool(**arguments) if tool else "No tool found"
+
+        results.append(
+            {
+                "type": "function_call_output",
+                "call_id": tool_call.call_id,
+                "output": json.dumps(result),
+            }
+        )
+
     return results
 
-tool_email = {
-    "name":"record_email",
-    "description":"Record that a user provided their email address",
-    "parameters":{
-        "type":"object",
-        "properties":{
-            "name": {"type":"string", "description":"The user's name, if they provided it"},
-            "email": {"type":"string", "description":"The email address of this user"},
-        }
-    }
-}
-
-tool_unknown_question = {
-    "name":"record_unknown_question",
-    "description":"Always use this tool to record any question that couldn't be answered as you didn't know the answer",
-    "parameters":{
-        "type":"object",
-        "properties":{
-            "question": {"type":"string", "description":"The question that couldn't be answered"},
-        }
+tools = [
+    {
+        "type": "function",
+        "name": tool_email["name"],
+        "description": tool_email["description"],
+        "parameters": tool_email["parameters"],
     },
-    "required": ["question"],
-    "additionalProperties": False
-}
-
-tools = [{"type":"function", "function": tool_email}, {"type":"function", "function": tool_unknown_question}]
+    {
+        "type": "function",
+        "name": tool_retrieve_more_info["name"],
+        "description": tool_retrieve_more_info["description"],
+        "parameters": tool_retrieve_more_info["parameters"],
+    },
+]

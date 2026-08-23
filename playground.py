@@ -12,7 +12,7 @@ def playground_chat(message, history):
         for msg in history
     ]
 
-    response, _ = chat(message, formatted_history)
+    response, _, _ = chat(message, formatted_history)
 
     return response
 

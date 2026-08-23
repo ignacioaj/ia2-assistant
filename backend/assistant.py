@@ -1,7 +1,10 @@
 from openai import OpenAI
 from dotenv import load_dotenv
+
 from backend.context import TWIN_INSTRUCTIONS
 from backend.pricing import log_usage
+from backend.tools import tools, handle_tool_calls
+
 
 load_dotenv()
 
@@ -9,6 +12,7 @@ MODEL_NAME = "gpt-5.4-mini"
 MAX_HISTORY_MESSAGES = 20
 
 openai = OpenAI()
+
 
 def chat(message, history):
     history = history[-MAX_HISTORY_MESSAGES:]
@@ -19,34 +23,57 @@ def chat(message, history):
             "content": [
                 {
                     "type": "input_text" if msg["role"] == "user" else "output_text",
-                    "text": msg["content"]
+                    "text": msg["content"],
                 }
-            ]
+            ],
         }
         for msg in history
     ]
 
     input_messages.append(
-        {"role": "user", "content": message}
+        {
+            "role": "user",
+            "content": message,
+        }
     )
 
     response = openai.responses.create(
         model=MODEL_NAME,
         instructions=TWIN_INSTRUCTIONS,
-        input=input_messages
+        input=input_messages,
+        tools=tools,
     )
+
+    while any(item.type == "function_call" for item in response.output):
+        tool_calls = [
+            item
+            for item in response.output
+            if item.type == "function_call"
+        ]
+
+        tool_results = handle_tool_calls(tool_calls)
+
+        input_messages.extend(response.output)
+        input_messages.extend(tool_results)
+
+        response = openai.responses.create(
+            model=MODEL_NAME,
+            instructions=TWIN_INSTRUCTIONS,
+            input=input_messages,
+            tools=tools,
+        )
 
     response_text = response.output_text
 
     updated_history = history + [
         {
             "role": "user",
-            "content": message
+            "content": message,
         },
         {
             "role": "assistant",
-            "content": response_text
-        }
+            "content": response_text,
+        },
     ]
 
     return response_text, updated_history, response.usage
