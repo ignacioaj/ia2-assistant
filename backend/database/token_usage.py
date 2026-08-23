@@ -1,10 +1,14 @@
 import os
 from datetime import datetime, timezone, timedelta
-from backend.database.database import db
 
 from dotenv import load_dotenv
+from pymongo import ReturnDocument
+
+from backend.database.database import db
+
 
 load_dotenv()
+
 
 MAXIMUM_DAILY_COST_PER_USER = os.getenv(
     "MAXIMUM_DAILY_COST_PER_USER"
@@ -19,10 +23,11 @@ try:
     MAXIMUM_DAILY_COST_PER_USER = float(
         MAXIMUM_DAILY_COST_PER_USER
     )
-except ValueError:
+except ValueError as exc:
     raise RuntimeError(
         "MAXIMUM_DAILY_COST_PER_USER must be a number"
-    )
+    ) from exc
+
 
 token_usage_collection = db["token_usage"]
 
@@ -38,42 +43,59 @@ def save_token_usage(
     today = now.strftime("%Y-%m-%d")
 
     # ---------------------------------------------------------
-    # Try to create the document if this is the first request
-    # from this IP.
+    # First request / new day
+    #
+    # We first check whether there is an existing document for
+    # this IP and whether its daily date is still today.
     # ---------------------------------------------------------
 
-    blocked_until = (
-        now + timedelta(hours=24)
-        if cost >= MAXIMUM_DAILY_COST_PER_USER
-        else None
+    user_data = token_usage_collection.find_one(
+        {"_id": ip},
+        {
+            "daily.date": 1,
+            "daily.cost": 1,
+            "blocked_until": 1,
+        },
     )
 
-    document = {
-        "_id": ip,
-        "daily": {
-            "date": today,
-            "input_tokens": input_tokens,
-            "output_tokens": output_tokens,
-            "total_tokens": total_tokens,
-            "cost": cost,
-        },
-        "last_query": now,
-        "blocked_until": blocked_until,
-    }
+    # ---------------------------------------------------------
+    # First request from this IP
+    # ---------------------------------------------------------
 
-    try:
-        token_usage_collection.insert_one(document)
-        return
-    except Exception as exc:
-        # Another request may have created the document
-        # concurrently. In that case we continue and update it.
-        if "duplicate key" not in str(exc).lower():
-            raise
+    if user_data is None:
+        blocked_until = (
+            now + timedelta(hours=24)
+            if cost >= MAXIMUM_DAILY_COST_PER_USER
+            else None
+        )
+
+        document = {
+            "_id": ip,
+            "daily": {
+                "date": today,
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens,
+                "total_tokens": total_tokens,
+                "cost": cost,
+            },
+            "last_query": now,
+            "blocked_until": blocked_until,
+        }
+
+        try:
+            token_usage_collection.insert_one(document)
+            return
+        except Exception as exc:
+            # Another request may have created the document
+            # between find_one() and insert_one().
+            if "duplicate key" not in str(exc).lower():
+                raise
 
     # ---------------------------------------------------------
     # New day
     #
-    # Replace the complete daily object atomically.
+    # Replace the complete daily object.
+    # The date condition makes this atomic.
     # ---------------------------------------------------------
 
     result = token_usage_collection.update_one(
@@ -106,13 +128,36 @@ def save_token_usage(
     # ---------------------------------------------------------
     # Same day
     #
-    # Increment the daily values atomically.
+    # Increment counters atomically.
     # ---------------------------------------------------------
 
-    new_total_cost = token_usage_collection.find_one(
-        {"_id": ip},
-        {"daily.cost": 1},
-    )["daily"]["cost"] + cost
+    current_data = token_usage_collection.find_one(
+        {
+            "_id": ip,
+            "daily.date": today,
+        },
+        {
+            "daily.cost": 1,
+        },
+    )
+
+    if current_data is None:
+        # The document may have been changed concurrently.
+        # Retry the function so the new state is handled.
+        return save_token_usage(
+            ip=ip,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            total_tokens=total_tokens,
+            cost=cost,
+        )
+
+    current_cost = current_data.get("daily", {}).get(
+        "cost",
+        0.0,
+    )
+
+    new_total_cost = current_cost + cost
 
     update = {
         "$inc": {
@@ -143,9 +188,10 @@ def save_token_usage(
 def is_usage_blocked(ip):
     now = datetime.now(timezone.utc)
 
-    user_data = token_usage_collection.find_one({
-        "_id": ip,
-    })
+    user_data = token_usage_collection.find_one(
+        {"_id": ip},
+        {"blocked_until": 1},
+    )
 
     if not user_data:
         return False
@@ -162,7 +208,10 @@ def is_usage_blocked(ip):
 
     if now >= blocked_until:
         token_usage_collection.update_one(
-            {"_id": ip},
+            {
+                "_id": ip,
+                "blocked_until": blocked_until,
+            },
             {
                 "$unset": {
                     "blocked_until": ""
