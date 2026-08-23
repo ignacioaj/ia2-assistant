@@ -390,3 +390,4 @@ The next stages should strengthen software engineering foundations, deepen AI/da
 ## 11. Contact
 
 LinkedIn: https://www.linkedin.com/in/ignacio-atencia/
+GitHub: https://github.com/ignacioaj
