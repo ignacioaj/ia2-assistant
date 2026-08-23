@@ -2,7 +2,6 @@ from openai import OpenAI
 from dotenv import load_dotenv
 
 from backend.context import TWIN_INSTRUCTIONS
-from backend.pricing import log_usage
 from backend.tools import tools, handle_tool_calls
 
 
@@ -80,7 +79,5 @@ def chat(message, history):
             "content": response_text,
         },
     ]
-
-    log_usage(MODEL_NAME, response.usage)
 
     return response_text, updated_history, response.usage
