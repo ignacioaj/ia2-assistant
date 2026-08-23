@@ -1,13 +1,4 @@
 import logging
-import os
-
-from dotenv import load_dotenv
-
-load_dotenv()
-
-MAXIMUM_DAILY_COST_PER_USER = float(
-    os.getenv("MAXIMUM_DAILY_COST_PER_USER", "0.05")
-)
 
 TOKENS_PER_PRICE = 1_000_000
 

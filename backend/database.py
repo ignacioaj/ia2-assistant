@@ -4,16 +4,15 @@ from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
 from pymongo import MongoClient
 
-from backend.pricing import MAXIMUM_DAILY_COST_PER_USER
-
-
 load_dotenv()
 
 MONGODB_URI = os.getenv("MONGODB_URI")
+MAXIMUM_DAILY_COST_PER_USER = os.getenv("MAXIMUM_DAILY_COST_PER_USER")
 
 if not MONGODB_URI:
     raise RuntimeError("MONGODB_URI is not configured")
-
+if not MAXIMUM_DAILY_COST_PER_USER:
+    raise RuntimeError("MAXIMUM_DAILY_COST_PER_USER is not configured")
 
 client = MongoClient(MONGODB_URI)
 
