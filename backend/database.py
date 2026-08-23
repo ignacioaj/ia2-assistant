@@ -110,4 +110,7 @@ def is_usage_blocked(ip):
     if not blocked_since:
         return False
 
+    if blocked_since.tzinfo is None:
+        blocked_since = blocked_since.replace(tzinfo=timezone.utc)
+
     return now < blocked_since + timedelta(hours=24)
