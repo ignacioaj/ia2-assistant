@@ -10,6 +10,7 @@ load_dotenv()
 
 MODEL_NAME = "gpt-5.4-mini"
 MAX_HISTORY_MESSAGES = 20
+PROMPT_CACHE_KEY = "career-twin-v1"
 
 openai = OpenAI()
 
@@ -22,7 +23,9 @@ def chat(message, history):
             "role": msg["role"],
             "content": [
                 {
-                    "type": "input_text" if msg["role"] == "user" else "output_text",
+                    "type": "input_text"
+                    if msg["role"] == "user"
+                    else "output_text",
                     "text": msg["content"],
                 }
             ],
@@ -42,6 +45,7 @@ def chat(message, history):
         instructions=TWIN_INSTRUCTIONS,
         input=input_messages,
         tools=tools,
+        prompt_cache_key=PROMPT_CACHE_KEY,
     )
 
     while any(item.type == "function_call" for item in response.output):
@@ -61,6 +65,7 @@ def chat(message, history):
             instructions=TWIN_INSTRUCTIONS,
             input=input_messages,
             tools=tools,
+            prompt_cache_key=PROMPT_CACHE_KEY,
         )
 
     response_text = response.output_text
@@ -75,5 +80,7 @@ def chat(message, history):
             "content": response_text,
         },
     ]
+
+    log_usage(MODEL_NAME, response.usage)
 
     return response_text, updated_history, response.usage
