@@ -8,7 +8,7 @@ I developed an image-processing and machine-learning pipeline using manually ann
 
 The project also included tools for dataset preparation, preprocessing, model training and validation, prediction analysis, visualization, and quantitative evaluation of detection and classification results.
 
-**GitHub:** https://github.com/ignacioaj/tfg-ignacioaj
+**GitHub link:** https://github.com/ignacioaj/tfg-ignacioaj
 
 **Technologies & methods:** Python, CNNs, computer vision, image preprocessing, object detection, image classification, OpenCV, NumPy, pandas, Google Colab, cross-validation, ensemble methods.
 
@@ -26,7 +26,7 @@ The application is deployed on **Render** and uses MongoDB to store daily token 
 
 I also developed a local Gradio playground for experimenting with and refining prompts before integrating them into the deployed system. This provides an iterative environment for testing different prompt configurations and evaluating how the LLM responds to questions about my profile.
 
-**GitHub:** https://github.com/ignacioaj/ia2-assistant
+**GitHub link:** https://github.com/ignacioaj/ia2-assistant
 
 **Technologies & methods:** Python, FastAPI, OpenAI API, LLMs, prompt engineering, Gradio, MongoDB, REST APIs, conversational context, token usage tracking, rate limiting, cost monitoring, Render, deployment.
 
@@ -40,7 +40,7 @@ I analyzed both monochannel and multichannel EEG data and investigated how activ
 
 The project includes separate analysis workflows for monochannel and multichannel recordings, together with filtering functions and visualizations of the resulting signals and spectral characteristics.
 
-**GitHub:** https://github.com/ignacioaj/sleepinduction
+**GitHub link:** https://github.com/ignacioaj/sleepinduction
 
 **Technologies & methods:** MATLAB, EEG signal processing, spectral analysis, spectrograms, spectral entropy, frequency-band analysis, digital filtering, monochannel and multichannel data.
 
