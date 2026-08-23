@@ -13,6 +13,14 @@ if not MONGODB_URI:
     raise RuntimeError("MONGODB_URI is not configured")
 if not MAXIMUM_DAILY_COST_PER_USER:
     raise RuntimeError("MAXIMUM_DAILY_COST_PER_USER is not configured")
+try:
+    MAXIMUM_DAILY_COST_PER_USER = float(
+        MAXIMUM_DAILY_COST_PER_USER
+    )
+except ValueError:
+    raise RuntimeError(
+        "MAXIMUM_DAILY_COST_PER_USER must be a number"
+    )
 
 client = MongoClient(MONGODB_URI)
 
