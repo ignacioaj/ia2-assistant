@@ -8,7 +8,8 @@ from backend.tools import tools, handle_tool_calls
 
 load_dotenv()
 
-MODEL_NAME = MAXIMUM_DAILY_COST_PER_USER = os.getenv("MAXIMUM_DAILY_COST_PER_USER")
+MODEL_NAME = os.getenv("MODEL_NAME")
+MAXIMUM_DAILY_COST_PER_USER = os.getenv("MAXIMUM_DAILY_COST_PER_USER")
 MAX_HISTORY_MESSAGES = 20
 PROMPT_CACHE_KEY = "career-twin-v1"
 
