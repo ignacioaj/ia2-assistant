@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from backend.assistant import chat
 from backend.pricing import log_usage
-from backend.database import save_token_usage, get_token_usage, is_usage_blocked
+from backend.database import save_token_usage, is_usage_blocked
 
 MAXIMUM_DAILY_COST = 0.10
 
