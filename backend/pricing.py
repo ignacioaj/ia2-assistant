@@ -1,8 +1,7 @@
 import logging
 
-
-logger = logging.getLogger("career-twin")
-
+MAXIMUM_DAILY_COST_PER_USER = 0.01
+TOKENS_PER_PRICE = 1_000_000
 
 PRICING = {
     "gpt-5.4-mini": {
@@ -12,8 +11,7 @@ PRICING = {
     }
 }
 
-TOKENS_PER_PRICE = 1_000_000
-
+logger = logging.getLogger("career-twin")
 
 def calculate_cost(model, input_tokens, output_tokens):
     pricing = PRICING[model]
