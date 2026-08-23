@@ -1,13 +1,14 @@
+import os
+
 from openai import OpenAI
 from dotenv import load_dotenv
 
 from backend.context import TWIN_INSTRUCTIONS
 from backend.tools import tools, handle_tool_calls
 
-
 load_dotenv()
 
-MODEL_NAME = "gpt-5.4-mini"
+MODEL_NAME = MAXIMUM_DAILY_COST_PER_USER = os.getenv("MAXIMUM_DAILY_COST_PER_USER")
 MAX_HISTORY_MESSAGES = 20
 PROMPT_CACHE_KEY = "career-twin-v1"
 

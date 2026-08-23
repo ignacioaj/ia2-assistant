@@ -1,18 +1,14 @@
 import os
 from datetime import datetime, timezone, timedelta
+from backend.database.database import db
 
 from dotenv import load_dotenv
-from pymongo import MongoClient
 
 load_dotenv()
 
-MONGODB_URI = os.getenv("MONGODB_URI")
 MAXIMUM_DAILY_COST_PER_USER = os.getenv(
     "MAXIMUM_DAILY_COST_PER_USER"
 )
-
-if not MONGODB_URI:
-    raise RuntimeError("MONGODB_URI is not configured")
 
 if not MAXIMUM_DAILY_COST_PER_USER:
     raise RuntimeError(
@@ -27,11 +23,6 @@ except ValueError:
     raise RuntimeError(
         "MAXIMUM_DAILY_COST_PER_USER must be a number"
     )
-
-
-client = MongoClient(MONGODB_URI)
-
-db = client["ai2_assistant"]
 
 token_usage_collection = db["token_usage"]
 

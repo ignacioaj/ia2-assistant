@@ -1,10 +1,16 @@
+import os
+
 from fastapi import FastAPI, Request, HTTPException
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
 
 from backend.assistant import chat
 from backend.pricing import log_usage
-from backend.database import save_token_usage, is_usage_blocked
+from backend.database.token_usage import save_token_usage, is_usage_blocked
+from backend.database.sessions import save_session
+
+load_dotenv()
 
 app = FastAPI()
 
@@ -16,13 +22,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+MODEL_NAME = os.getenv("MODEL_NAME")
+MAXIMUM_DAILY_COST_PER_USER = os.getenv("MAXIMUM_DAILY_COST_PER_USER")
 sessions = {}
-
 
 class ChatRequest(BaseModel):
     session_id: str
     message: str
-
 
 def get_client_ip(request: Request):
     forwarded_for = request.headers.get("X-Forwarded-For")
@@ -53,10 +59,12 @@ def chat_endpoint(data: ChatRequest, request: Request):
 
     sessions[data.session_id] = updated_history
 
+    cost = 0
+
     if usage:
 
         cost = log_usage(
-            model="gpt-5.4-mini",
+            model=MODEL_NAME,
             usage=usage,
         )
 
@@ -67,6 +75,15 @@ def chat_endpoint(data: ChatRequest, request: Request):
             total_tokens=usage.total_tokens,
             cost=cost,
         )
+
+    save_session(
+        session_id=data.session_id,
+        ip=ip,
+        question=data.message,
+        answer=response,
+        status="success",
+        cost=cost
+    )
 
     return {
         "response": response
