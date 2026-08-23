@@ -36,8 +36,6 @@ def chat(message, history):
         input=input_messages
     )
 
-    log_usage(MODEL_NAME, response.usage)
-
     response_text = response.output_text
 
     updated_history = history + [
@@ -51,4 +49,4 @@ def chat(message, history):
         }
     ]
 
-    return response_text, updated_history
+    return response_text, updated_history, response.usage
