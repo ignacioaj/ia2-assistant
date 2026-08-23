@@ -31,7 +31,6 @@ def save_session(
             "$setOnInsert": {
                 "ip": ip,
                 "created_at": now,
-                "cost": 0.0,
             },
             "$set": {
                 "last_query": now,
