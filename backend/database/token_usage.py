@@ -43,17 +43,13 @@ def save_token_usage(
     today = now.strftime("%Y-%m-%d")
 
     # ---------------------------------------------------------
-    # First request / new day
-    #
-    # We first check whether there is an existing document for
-    # this IP and whether its daily date is still today.
+    # Get current document
     # ---------------------------------------------------------
 
     user_data = token_usage_collection.find_one(
         {"_id": ip},
         {
-            "daily.date": 1,
-            "daily.cost": 1,
+            "daily": 1,
             "blocked_until": 1,
         },
     )
@@ -91,72 +87,89 @@ def save_token_usage(
             if "duplicate key" not in str(exc).lower():
                 raise
 
+        # The document now exists, so continue below.
+
     # ---------------------------------------------------------
-    # New day
-    #
-    # Replace the complete daily object.
-    # The date condition makes this atomic.
+    # Check current daily date
     # ---------------------------------------------------------
 
-    result = token_usage_collection.update_one(
+    user_data = token_usage_collection.find_one(
+        {"_id": ip},
         {
-            "_id": ip,
-            "daily.date": {"$ne": today},
-        },
-        {
-            "$set": {
-                "daily": {
-                    "date": today,
-                    "input_tokens": input_tokens,
-                    "output_tokens": output_tokens,
-                    "total_tokens": total_tokens,
-                    "cost": cost,
-                },
-                "last_query": now,
-                "blocked_until": (
-                    now + timedelta(hours=24)
-                    if cost >= MAXIMUM_DAILY_COST_PER_USER
-                    else None
-                ),
-            }
+            "daily": 1,
         },
     )
 
-    if result.modified_count:
+    if user_data is None:
+        # Extremely unlikely, but do not recurse.
+        # Try the whole operation once more by inserting/updating.
+        blocked_until = (
+            now + timedelta(hours=24)
+            if cost >= MAXIMUM_DAILY_COST_PER_USER
+            else None
+        )
+
+        token_usage_collection.update_one(
+            {"_id": ip},
+            {
+                "$set": {
+                    "daily": {
+                        "date": today,
+                        "input_tokens": input_tokens,
+                        "output_tokens": output_tokens,
+                        "total_tokens": total_tokens,
+                        "cost": cost,
+                    },
+                    "last_query": now,
+                    "blocked_until": blocked_until,
+                }
+            },
+            upsert=True,
+        )
+
+        return
+
+    daily = user_data.get("daily") or {}
+    stored_date = daily.get("date")
+
+    # ---------------------------------------------------------
+    # New day
+    # ---------------------------------------------------------
+
+    if stored_date != today:
+        blocked_until = (
+            now + timedelta(hours=24)
+            if cost >= MAXIMUM_DAILY_COST_PER_USER
+            else None
+        )
+
+        token_usage_collection.update_one(
+            {
+                "_id": ip,
+                "daily.date": {"$ne": today},
+            },
+            {
+                "$set": {
+                    "daily": {
+                        "date": today,
+                        "input_tokens": input_tokens,
+                        "output_tokens": output_tokens,
+                        "total_tokens": total_tokens,
+                        "cost": cost,
+                    },
+                    "last_query": now,
+                    "blocked_until": blocked_until,
+                }
+            },
+        )
+
         return
 
     # ---------------------------------------------------------
     # Same day
-    #
-    # Increment counters atomically.
     # ---------------------------------------------------------
 
-    current_data = token_usage_collection.find_one(
-        {
-            "_id": ip,
-            "daily.date": today,
-        },
-        {
-            "daily.cost": 1,
-        },
-    )
-
-    if current_data is None:
-        # The document may have been changed concurrently.
-        # Retry the function so the new state is handled.
-        return save_token_usage(
-            ip=ip,
-            input_tokens=input_tokens,
-            output_tokens=output_tokens,
-            total_tokens=total_tokens,
-            cost=cost,
-        )
-
-    current_cost = current_data.get("daily", {}).get(
-        "cost",
-        0.0,
-    )
-
+    current_cost = daily.get("cost", 0.0)
     new_total_cost = current_cost + cost
 
     update = {
@@ -190,7 +203,9 @@ def is_usage_blocked(ip):
 
     user_data = token_usage_collection.find_one(
         {"_id": ip},
-        {"blocked_until": 1},
+        {
+            "blocked_until": 1,
+        },
     )
 
     if not user_data:
