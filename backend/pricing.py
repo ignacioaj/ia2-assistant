@@ -1,6 +1,14 @@
 import logging
+import os
 
-MAXIMUM_DAILY_COST_PER_USER = 0.05
+from dotenv import load_dotenv
+
+load_dotenv()
+
+MAXIMUM_DAILY_COST_PER_USER = float(
+    os.getenv("MAXIMUM_DAILY_COST_PER_USER", "0.05")
+)
+
 TOKENS_PER_PRICE = 1_000_000
 
 PRICING = {
@@ -11,7 +19,19 @@ PRICING = {
     }
 }
 
+
 logger = logging.getLogger("career-twin")
+logger.setLevel(logging.INFO)
+logger.propagate = False
+
+if not logger.handlers:
+    handler = logging.StreamHandler()
+    handler.setFormatter(
+        logging.Formatter(
+            "%(asctime)s | %(levelname)s | %(message)s"
+        )
+    )
+    logger.addHandler(handler)
 
 
 def calculate_cost(
@@ -60,8 +80,9 @@ def log_usage(model, usage):
     uncached_input_tokens = input_tokens - cached_input_tokens
 
     logger.info(
-        "usage | model=%s | input-tokens=%s | cached-tokens=%s | uncached-tokens=%s "
-        "| output-tokens=%s | total-tokens=%s | total-cost=$%.6f",
+        "usage | model=%s | input-tokens=%s | cached-tokens=%s | "
+        "uncached-tokens=%s | output-tokens=%s | total-tokens=%s | "
+        "total-cost=$%.6f",
         model,
         input_tokens,
         cached_input_tokens,
