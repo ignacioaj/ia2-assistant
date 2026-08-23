@@ -1,5 +1,5 @@
 import gradio as gr
-from backend.twin import chat
+from backend.assistant import chat
 
 demo = gr.ChatInterface(
     fn=chat,
