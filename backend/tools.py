@@ -1,6 +1,14 @@
 import json
+import os
+import smtplib
 
 from backend.context import load_text_file
+from email.message import EmailMessage
+from dotenv import load_dotenv
+
+load_dotenv()
+EMAIL_USER = os.getenv("EMAIL_USER")
+EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
 
 PROFILE_SECTIONS = {
     "projects": "projects.md",
@@ -48,32 +56,45 @@ tool_retrieve_more_info = {
 
 tool_email = {
     "name": "record_email",
-    "description": "Record that a user provided their email address",
+    "description": "Send an email to a specified recipient.",
     "parameters": {
         "type": "object",
         "properties": {
-            "name": {
+            "to": {
                 "type": "string",
-                "description": "The user's name, if they provided it",
+                "description": "The email address of the recipient",
             },
-            "email": {
+            "subject": {
                 "type": "string",
-                "description": "The email address of this user",
+                "description": "The subject of the email",
+            },
+            "body": {
+                "type": "string",
+                "description": "The content of the email",
             },
         },
-        "required": ["email"],
+        "required": ["to", "subject", "body"],
         "additionalProperties": False,
     },
 }
-
 
 # ============================================================
 # TOOL FUNCTIONS
 # ============================================================
 
-def record_email(name, email):
-    with open("emails.txt", "a") as f:
-        f.write(f"{name}:{email}\n")
+def record_email(to: str, subject: str, body: str):
+    sender = EMAIL_USER
+    password = EMAIL_PASSWORD
+
+    msg = EmailMessage()
+    msg["From"] = sender
+    msg["To"] = to
+    msg["Subject"] = subject
+    msg.set_content(body)
+
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+        smtp.login(sender, password)
+        smtp.send_message(msg)
 
     return "OK"
 
