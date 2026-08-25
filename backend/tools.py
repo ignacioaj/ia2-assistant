@@ -56,24 +56,35 @@ tool_retrieve_more_info = {
 
 tool_email = {
     "name": "record_email",
-    "description": "Send an email to a specified recipient.",
+    "description": (
+        "Send a message to Ignacio by email. "
+        "Use this tool whenever the user asks to communicate something to Ignacio"
+        "If the user doesn't explicitly mention the content of the body, send back the body you infer and ask for confirmation before sending."
+        "If the subject is not specified, create it based on the body (do not send the body itself)."
+        "Do not accept inappropriate bodies or bodies which are not strictly professional or useful for Ignacio."
+        "If not specified by the user, do ALWAYS ask for the sender email."
+    ),
     "parameters": {
         "type": "object",
         "properties": {
-            "to": {
+            "sender": {
                 "type": "string",
-                "description": "The email address of the recipient",
+                "description": (
+                    "The valid email address of the person who wrote the message. "
+                    "This is NOT the recipient email address. "
+                    "Do not use EMAIL_USER here."
+                ),
             },
             "subject": {
                 "type": "string",
-                "description": "The subject of the email",
+                "description": "The subject of the email.",
             },
             "body": {
                 "type": "string",
-                "description": "The content of the email",
+                "description": "The message written by the sender.",
             },
         },
-        "required": ["to", "subject", "body"],
+        "required": ["sender", "body"],
         "additionalProperties": False,
     },
 }
@@ -82,18 +93,21 @@ tool_email = {
 # TOOL FUNCTIONS
 # ============================================================
 
-def record_email(to: str, subject: str, body: str):
-    sender = EMAIL_USER
+def record_email(sender: str, subject: str, body: str):
+    recipient = EMAIL_USER
     password = EMAIL_PASSWORD
 
     msg = EmailMessage()
     msg["From"] = sender
-    msg["To"] = to
+    msg["To"] = recipient
     msg["Subject"] = subject
-    msg.set_content(body)
+    msg.set_content(
+        f"Sent by: {sender}\n\n"
+        f"{body}"
+    )
 
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-        smtp.login(sender, password)
+        smtp.login(recipient, password)
         smtp.send_message(msg)
 
     return "OK"
