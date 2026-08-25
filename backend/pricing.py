@@ -1,4 +1,4 @@
-import logging
+from backend.logger import logger
 
 TOKENS_PER_PRICE = 1_000_000
 
@@ -9,21 +9,6 @@ PRICING = {
         "cached_input": 0.075,
     }
 }
-
-
-logger = logging.getLogger("career-twin")
-logger.setLevel(logging.INFO)
-logger.propagate = False
-
-if not logger.handlers:
-    handler = logging.StreamHandler()
-    handler.setFormatter(
-        logging.Formatter(
-            "%(asctime)s | %(levelname)s | %(message)s"
-        )
-    )
-    logger.addHandler(handler)
-
 
 def calculate_cost(
     model,

@@ -1,6 +1,7 @@
 import json
 import os
 import smtplib
+from backend.logger import logger
 
 from backend.context import load_text_file
 from email.message import EmailMessage
@@ -119,7 +120,7 @@ def record_email(sender: str, subject: str, body: str):
         return "OK"
 
     except Exception as e:
-        print(f"Error sending email: {type(e).__name__}: {e}")
+        logger.info(f"Error sending email: {type(e).__name__}: {e}")
         return f"Email error: {e}"
 
 def retrieve_more_info(section: str) -> str:
