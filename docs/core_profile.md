@@ -391,3 +391,4 @@ The next stages should strengthen software engineering foundations, deepen AI/da
 
 LinkedIn: https://www.linkedin.com/in/ignacio-atencia/
 GitHub: https://github.com/ignacioaj
+Curriculum Vitae (CV): https://ignacioaj.github.io/src/assets/docs/CV-IGNACIO-ATENCIA.pdf
