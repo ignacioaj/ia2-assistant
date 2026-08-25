@@ -98,19 +98,29 @@ def record_email(sender: str, subject: str, body: str):
     password = EMAIL_PASSWORD
 
     msg = EmailMessage()
-    msg["From"] = sender
+    msg["From"] = recipient
     msg["To"] = recipient
+    msg["Reply-To"] = sender
     msg["Subject"] = subject
     msg.set_content(
         f"Sent by: {sender}\n\n"
         f"{body}"
     )
 
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-        smtp.login(recipient, password)
-        smtp.send_message(msg)
+    try:
+        with smtplib.SMTP_SSL(
+            "smtp.gmail.com",
+            465,
+            timeout=20
+        ) as smtp:
+            smtp.login(recipient, password)
+            smtp.send_message(msg)
 
-    return "OK"
+        return "OK"
+
+    except Exception as e:
+        print(f"Error sending email: {type(e).__name__}: {e}")
+        return f"Email error: {e}"
 
 def retrieve_more_info(section: str) -> str:
     filename = PROFILE_SECTIONS.get(section)
