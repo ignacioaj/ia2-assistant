@@ -139,7 +139,7 @@ def record_email(sender: str, subject: str, body: str):
             }
         ).execute()
 
-        logger.info("Email sent successfully")
+        logger.info(f"Email sent successfully by {sender}")
 
         return "OK"
 
