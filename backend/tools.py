@@ -63,7 +63,7 @@ tool_email = {
     "description": (
         "Send a message to Ignacio by email. "
         "Use this tool whenever the user asks to communicate something to Ignacio"
-        "If the user doesn't explicitly mention the content of the body, send back the body you infer and ask for confirmation before sending."
+        "If the user doesn't explicitly mention the content of the body (colon and/or quotes), send back the body you infer and ask for confirmation before sending."
         "If the subject is not specified, create it based on the body (do not send the body itself)."
         "Do not accept inappropriate bodies or bodies which are not strictly professional or useful for Ignacio."
         "If not specified by the user, do ALWAYS ask for the sender email."
