@@ -1,15 +1,18 @@
 import json
 import os
-import smtplib
-from backend.logger import logger
-
-from backend.context import load_text_file
+import base64
 from email.message import EmailMessage
 from dotenv import load_dotenv
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
+
+from backend.logger import logger
+from backend.context import load_text_file
 
 load_dotenv()
 EMAIL_USER = os.getenv("EMAIL_USER")
 EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
+GMAIL_SCOPES = ["https://www.googleapis.com/auth/gmail.send"]
 
 PROFILE_SECTIONS = {
     "projects": "projects.md",
@@ -73,7 +76,6 @@ tool_email = {
                 "description": (
                     "The valid email address of the person who wrote the message. "
                     "This is NOT the recipient email address. "
-                    "Do not use EMAIL_USER here."
                 ),
             },
             "subject": {
@@ -95,32 +97,56 @@ tool_email = {
 # ============================================================
 
 def record_email(sender: str, subject: str, body: str):
-    recipient = EMAIL_USER
-    password = EMAIL_PASSWORD
-
-    msg = EmailMessage()
-    msg["From"] = recipient
-    msg["To"] = recipient
-    msg["Reply-To"] = sender
-    msg["Subject"] = subject
-    msg.set_content(
-        f"Sent by: {sender}\n\n"
-        f"{body}"
-    )
+    recipient = os.environ["EMAIL_USER"]
 
     try:
-        with smtplib.SMTP_SSL(
-            "smtp.gmail.com",
-            465,
-            timeout=20
-        ) as smtp:
-            smtp.login(recipient, password)
-            smtp.send_message(msg)
+        credentials = Credentials(
+            token=None,
+            refresh_token=os.environ["GMAIL_REFRESH_TOKEN"],
+            token_uri="https://oauth2.googleapis.com/token",
+            client_id=os.environ["GMAIL_CLIENT_ID"],
+            client_secret=os.environ["GMAIL_CLIENT_SECRET"],
+            scopes=GMAIL_SCOPES,
+        )
+
+        gmail = build(
+            "gmail",
+            "v1",
+            credentials=credentials,
+            cache_discovery=False,
+        )
+
+        msg = EmailMessage()
+
+        msg["From"] = recipient
+        msg["To"] = recipient
+        msg["Reply-To"] = sender
+        msg["Subject"] = subject
+
+        msg.set_content(
+            f"Sent by: {sender}\n\n"
+            f"{body}"
+        )
+
+        encoded_message = base64.urlsafe_b64encode(
+            msg.as_bytes()
+        ).decode()
+
+        gmail.users().messages().send(
+            userId="me",
+            body={
+                "raw": encoded_message
+            }
+        ).execute()
+
+        logger.info("Email sent successfully")
 
         return "OK"
 
     except Exception as e:
-        logger.info(f"Error sending email: {type(e).__name__}: {e}")
+        logger.exception(
+            f"Error sending email: {type(e).__name__}: {e}"
+        )
         return f"Email error: {e}"
 
 def retrieve_more_info(section: str) -> str:
