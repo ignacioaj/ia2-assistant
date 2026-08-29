@@ -29,9 +29,8 @@ The assistant keeps the conversation context of every session. A session is crea
         │
         ├──────────────► MongoDB
         │                 │
-        │                 ├── device data
-        │                 ├── session history
-        │                 └── usage & cost tracking
+        │                 ├── token_usage
+        │                 └── sessions
         │
         ▼
     Assistant
