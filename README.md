@@ -24,13 +24,13 @@ The assistant keeps the conversation context of every session (a session is crea
         │
         │ POST /chat
         ▼
-     FastAPI
+     Back-End
         │
    ┌────┴─────┐
    ▼          ▼
- LLM API   MongoDB
-            │
-            └── usage & cost tracking
+ Assistant  MongoDB
+              │
+              └── usage & cost tracking
 ```
 
 ### Project structure
@@ -68,7 +68,7 @@ ia2-assistant/
 * pricing.py: Computes the costs of every request based on token consumption.
 * prompts.py: IA2-wise Prompts.
 * tools.py: Tools used by the Assistant, triggered by concrete requests.
-* playgroubd.py: Allows testing prompts with no need to push changes.
+* playground.py: Allows testing prompts with no need to push changes.
 
 The Career Twin UI lives in the portfolio frontend and communicates with the backend through the `/chat` API.
 
