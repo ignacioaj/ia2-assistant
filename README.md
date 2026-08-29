@@ -2,7 +2,7 @@
 
 **IA² is my OpenAI-powered assistant.**
 
-It knows everything about my professional background, experience, projects, skills, and career path and is ready to answer any question about me.
+It knows everything about my professional background, experience, projects, skills, and career path and is ready to answer questions about me.
 
 ## ✨ What it does
 
@@ -15,70 +15,88 @@ Visitors can ask questions such as:
 * What kind of experience does he have?
 * How can I contact him?
 
-The assistant keeps the conversation context of every session. A session is created when the user opens the chat and ended when the chat is closed. Session lifecycle is handled by the Front-End, while the conversation history is stored and retrieved by the Back-End using the provided `session_id`.
+IA² maintains the conversation context within each chat session.
+
+A session is created when the user opens the chat and ends when the user closes it. The **Front-End manages the session lifecycle**, while the **Back-End manages and persists the conversation history** using the provided `session_id`.
+
+---
 
 ## 🏗️ Architecture
 
 ```text
-    Front-End
-        │
-        │ POST /chat
-        │ { session_id, message }
-        ▼
-     Back-End
-        │
-        ├──────────────► MongoDB
-        │                 │
-        │                 ├── token_usage
-        │                 └── sessions
-        │
-        ▼
-    Assistant
-        │
-        ▼
-    Response
-        │
-        ▼
-    Front-End
+                         ┌──────────────┐
+                         │  Front-End   │
+                         └──────┬───────┘
+                                │
+                         POST /chat
+                      {session_id, message}
+                                │
+                                ▼
+                         ┌──────────────┐
+                         │   Back-End   │
+                         │   FastAPI    │
+                         └──────┬───────┘
+                                │
+                 ┌──────────────┼──────────────┐
+                 │              │              │
+                 ▼              ▼              ▼
+           ┌──────────┐   ┌────────────┐  ┌───────────┐
+           │ Sessions │   │ Token      │  │ Assistant │
+           │ MongoDB  │   │ Usage      │  │   (LLM)   │
+           └──────────┘   │ MongoDB    │  └─────┬─────┘
+                          └────────────┘        │
+                                               │
+                                               ▼
+                                          LLM response
+                                               │
+                                               ▼
+                                         ┌───────────┐
+                                         │ Back-End  │
+                                         └─────┬─────┘
+                                               │
+                                               ▼
+                                         ┌───────────┐
+                                         │ Front-End │
+                                         └───────────┘
 ```
 
-### Chat flow
+The Back-End acts as the central layer between the Front-End, MongoDB, and the Assistant.
 
-The following describes the lifecycle of a chat request.
+It is responsible for:
 
-#### First request in a session
+* identifying the client/device;
+* enforcing the daily usage limit;
+* retrieving and storing conversation history;
+* calling the Assistant;
+* tracking token usage and costs;
+* returning the Assistant's response to the Front-End.
 
-1. The **Front-End** opens the chat and starts a new session, generating a `session_id`.
-2. The **Back-End** receives the request containing the user's message and `session_id`.
-3. The **Back-End** identifies the device using the public IP included in the request and retrieves the corresponding device data from MongoDB.
-4. The Back-End checks whether the device has reached its daily usage limit.
-5. If the device is **not blocked**, the Back-End retrieves the chat history associated with the provided `session_id`. For a new session, the history is empty.
-6. The Back-End sends the user's message together with the chat history to the **Assistant**.
+---
+
+## 💬 Chat flow
+
+A chat session starts when the user opens the chat and the Front-End creates a new `session_id`. The same `session_id` is used for all subsequent messages until the chat is closed.
+
+For each request, the flow is:
+
+1. The **Front-End** sends the user's message together with the `session_id` to `POST /chat`.
+2. The **Back-End** identifies the device using its public IP and retrieves its usage data from MongoDB.
+3. The **Back-End** checks whether the device has reached its daily usage limit.
+4. If the device is **blocked**, the Back-End returns an error to the Front-End and **does not call the Assistant**.
+5. If the device is **not blocked**, the Back-End retrieves the conversation history associated with the `session_id`.
+6. The Back-End sends the user's message, the existing conversation history, and the configured Assistant context to the **Assistant**.
 7. The **Assistant** processes the request and returns the response, updated conversation history, and token/cost information.
-8. The Back-End updates MongoDB, adding the cost of the request to the device's daily usage.
-9. The updated conversation history is kept associated with the provided `session_id`.
-10. The response is returned to the **Front-End**.
-11. The Front-End displays the response. The user can either continue the conversation or close the chat and finish the session.
+8. The Back-End stores the updated conversation history for the `session_id` and updates the device's daily usage and token cost in MongoDB.
+9. The Back-End returns the Assistant's response to the **Front-End**.
+10. The Front-End displays the response. The user can continue the conversation using the same `session_id` or close the chat to finish the session.
 
-If the device has reached its daily limit at step 4, the Back-End returns an error to the Front-End and **the request is not sent to the Assistant**.
+For the **first request**, the conversation history is empty. For subsequent requests, the Back-End retrieves the history generated by the previous requests using the same `session_id`, allowing the Assistant to maintain the conversation context.
 
-#### Subsequent requests in the same session
+If the daily usage limit is reached at any point, subsequent requests are rejected **before calling the LLM**.
 
-If the user continues chatting:
+---
 
-12. The **Back-End** receives another request containing the message and the same `session_id`.
-13. The Back-End retrieves the device data from MongoDB.
-14. The Back-End checks whether the device is blocked for the current day.
-15. If the device is **not blocked**, the Back-End retrieves the chat history from the previous request using the `session_id` and sends the new message together with that history to the Assistant.
-16. The **Assistant** processes the request using the existing conversation context.
-17. The Assistant returns the new response, updated history, and token/cost information.
-18. The Back-End updates the device's daily usage in MongoDB with the cost of the new request.
-19. The updated history remains associated with the same `session_id`.
-20. The response is returned to the Front-End, which displays it and allows the user to continue or close the session.
-
-If the device **is blocked**, the Back-End returns an error to the Front-End and **does not send the request to the Assistant**.
-
-### Project structure
+## 📁 Project structure
 
 ```text
 ia2-assistant/
@@ -103,41 +121,35 @@ ia2-assistant/
 └── playground.py
 ```
 
-* `database.py`: Provides connection to MongoDB.
-* `token_usage.py`: Handles logic for updating the `token_usage` collection.
-* `sessions.py`: Handles logic for updating the `sessions` collection and retrieving conversation history.
-* `assistant.py`: The LLM assistant logic.
-* `context.py`: Merges Ignacio's profile prompts with IA2 prompts.
-* `logger.py`: Handles logs to be displayed in the deployment environment console.
-* `main.py`: The backend that handles Front-End requests and calls the Assistant and database.
-* `pricing.py`: Computes the cost of every request based on token consumption.
-* `prompts.py`: IA2-specific prompts.
-* `tools.py`: Tools used by the Assistant, triggered by concrete requests.
-* `playground.py`: Allows testing prompts without needing to push changes.
+### Backend modules
 
-The Career Twin UI lives in the portfolio frontend and communicates with the backend through the `/chat` API.
+| File             | Responsibility                                                     |
+| ---------------- | ------------------------------------------------------------------ |
+| `database.py`    | Provides the connection to MongoDB.                                |
+| `sessions.py`    | Creates, retrieves, and updates conversation sessions and history. |
+| `token_usage.py` | Handles token usage and cost tracking.                             |
+| `assistant.py`   | Contains the LLM Assistant logic.                                  |
+| `context.py`     | Combines Ignacio's profile context with IA² prompts.               |
+| `logger.py`      | Handles application logs for the deployment environment.           |
+| `main.py`        | FastAPI application and request handling.                          |
+| `pricing.py`     | Calculates request costs based on token consumption.               |
+| `prompts.py`     | Contains IA²-specific prompts.                                     |
+| `tools.py`       | Contains tools that can be triggered by the Assistant.             |
+| `playground.py`  | Allows prompt testing without deploying changes.                   |
 
-### Backend
+The Assistant UI lives in the portfolio frontend and communicates with the backend through the `/chat` API.
 
-The API is built with **FastAPI**.
+---
 
-The `/chat` endpoint:
+## 🔌 API
 
-1. Identifies the client/device.
-2. Checks the daily usage limit.
-3. Retrieves the conversation history using the `session_id`.
-4. Calls the Assistant only if the device is not blocked.
-5. Stores token usage and cost.
-6. Updates the session history.
-7. Returns the response.
+The frontend communicates with the backend through:
 
-If the usage limit has been reached, the request is rejected **before calling the LLM**.
+```text
+POST /chat
+```
 
-### API
-
-The frontend communicates with the backend through `POST /chat`.
-
-#### Request
+### Request
 
 ```json
 {
@@ -146,7 +158,7 @@ The frontend communicates with the backend through `POST /chat`.
 }
 ```
 
-#### Response
+### Response
 
 ```json
 {
@@ -154,9 +166,13 @@ The frontend communicates with the backend through `POST /chat`.
 }
 ```
 
+The Back-End handles the conversation history internally, so the Front-End only needs to send the appropriate `session_id` with subsequent messages.
+
+---
+
 ## 💰 Usage protection
 
-Because the assistant is publicly accessible, API usage is protected by a cost-based limit.
+Because the assistant is publicly accessible, API usage is protected by a cost-based daily limit.
 
 The current limit is:
 
@@ -164,22 +180,33 @@ The current limit is:
 MAXIMUM_DAILY_COST_PER_USER = 0.05
 ```
 
-Usage is tracked in MongoDB by IP address, including token consumption, cost, and the time the limit was reached.
+Usage is tracked in MongoDB by IP address, including:
 
-Once the daily limit is reached, further AI requests from that device are blocked until the daily limit resets.
+* token consumption;
+* request cost;
+* daily accumulated cost;
+* information about when the limit was reached.
 
-Importantly, blocked requests are rejected by the Back-End **before they are sent to the LLM**, preventing additional AI costs.
+The usage check happens **before calling the LLM**.
+
+If the daily limit has been reached, subsequent AI requests from that device are rejected until the daily limit resets.
+
+This prevents blocked requests from generating additional LLM costs.
+
+---
 
 ## 🧠 Prompt architecture
 
-The assistant is built around two prompt layers:
+The Assistant's knowledge and behaviour are separated into independent prompt layers:
 
 * **Core prompt** — identity, behaviour, tone, and general rules.
-* **Career prompt** — Ignacio's professional knowledge, including experience, projects, skills, and career history.
-* **Interests prompt** — interests.
-* **Projects prompt** — projects.
+* **Career prompt** — Ignacio's professional background, experience, skills, and career history.
+* **Interests prompt** — Ignacio's interests.
+* **Projects prompt** — information about his projects.
 
-The prompt architecture is intentionally separated so the assistant's behaviour and knowledge can be refined independently.
+This separation makes it easier to update the Assistant's knowledge or behaviour without having to modify the entire prompt configuration.
+
+---
 
 ## 🗄️ Tech stack
 
@@ -188,10 +215,12 @@ The prompt architecture is intentionally separated so the assistant's behaviour 
 * **Database:** MongoDB
 * **Deployment:** Render
 
+---
+
 ## 🔐 Security
 
-The LLM API credentials remain server-side and are never exposed to the frontend.
+The LLM API credentials remain server-side and are never exposed to the Front-End.
 
-The backend also prevents additional LLM calls once a client reaches the configured usage limit.
+The Back-End also ensures that clients that have reached the configured usage limit cannot make additional LLM requests.
 
-For production, CORS should be restricted to the portfolio's domain and additional abuse protection can be added as needed.
+For production, CORS should be restricted to the portfolio's domain. Additional abuse protection, such as rate limiting or other request-level controls, can be added as needed.
