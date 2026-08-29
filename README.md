@@ -4,6 +4,7 @@
 
 It knows everything about my professional background, experience, projects, skills, and career path and is ready to answer questions about me.
 
+
 ## ✨ What it does
 
 Visitors can ask questions such as:
