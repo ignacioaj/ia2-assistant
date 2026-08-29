@@ -37,17 +37,38 @@ The assistant keeps the conversation context of every session (a session is crea
 
 ```text
 ia2-assistant/
-├── backend/
-│   ├── assistant.py     # Career Twin & LLM interaction
-│   ├── database.py      # MongoDB & usage tracking
-│   ├── main.py          # FastAPI application & /chat endpoint
-│   └── pricing.py       # Token pricing & cost calculation
 │
-├── docs/                # Project documentation
-├── pyproject.toml       # Python project configuration
-├── requirements.txt     # Python dependencies
-└── README.md
+├── backend/
+│   ├── database/
+│   │   ├── database.py
+│   │   ├── sessions.py
+│   │   └── token_usage.py
+│   │
+│   ├── __init__.py
+│   ├── assistant.py
+│   ├── context.py
+│   ├── logger.py
+│   ├── main.py
+│   ├── pricing.py
+│   ├── prompts.py
+│   └── tools.py
+│
+├── docs/
+│
+└── playground.py
 ```
+
+* database.py: Provides conection to MongoDB database. 
+* token_usage: Handles logic of updating token_usage collection.
+* sessions.py: Handles logic of updating sessions collection.
+* assistant.py: The LLM assistant logic.
+* context.py: Merges Ignacio's profile prompts with IA2 prompts.
+* logger.py: Handles logs to be displayed in deployment env console.
+* main.py: The backend that handles FE requests and calls the Assistant and the database.
+* pricing.py: Computes the costs of every request based on token consumption.
+* prompts.py: IA2-wise Prompts.
+* tools.py: Tools used by the Assistant, triggered by concrete requests.
+* playgroubd.py: Allows testing prompts with no need to push changes.
 
 The Career Twin UI lives in the portfolio frontend and communicates with the backend through the `/chat` API.
 
