@@ -20,7 +20,7 @@ The assistant keeps the conversation context of every session (a session is crea
 ## 🏗️ Architecture
 
 ```text
-Astro + TypeScript
+    Front-End
         │
         │ POST /chat
         ▼
@@ -72,7 +72,7 @@ The `/chat` endpoint:
 1. Identifies the client.
 2. Checks the usage limit.
 3. Retrieves the conversation history.
-4. Calls the Career Twin.
+4. Calls the Assistant.
 5. Stores token usage and cost.
 6. Returns the response.
 
@@ -128,19 +128,10 @@ The prompt architecture is intentionally separated so the assistant's behaviour 
 
 ## 🗄️ Tech stack
 
-* **Frontend:** Astro, TypeScript, Tailwind CSS
 * **Backend:** Python, FastAPI
 * **AI:** OpenAI API
 * **Database:** MongoDB
 * **Deployment:** Render
-
-## 🗺️ Roadmap
-
-* [ ] Refine and evaluate core & career prompts
-* [ ] Optimize caching of stable career knowledge
-* [ ] Add an email/contact tool
-* [ ] Further harden usage limiting and API security
-* [ ] Improve monitoring and observability
 
 ## 🔐 Security
 
@@ -151,7 +142,3 @@ The backend also prevents additional LLM calls once a client reaches the configu
 For production, CORS should be restricted to the portfolio's domain and additional abuse protection can be added as needed.
 
 ---
-
-**IA² — Ignacio's AI Assistant**
-
-*A conversational Career Twin for Ignacio Atencia.*
