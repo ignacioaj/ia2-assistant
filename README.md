@@ -51,18 +51,6 @@ ia2-assistant/
 
 The Career Twin UI lives in the portfolio frontend and communicates with the backend through the `/chat` API.
 
-### Frontend
-
-The Career Twin is integrated into Ignacio's portfolio using **Astro** and **TypeScript**.
-
-It handles:
-
-* Chat sessions and conversation history
-* Message rendering
-* Loading states
-* Usage-limit errors
-* Responsive chat UI
-
 ### Backend
 
 The API is built with **FastAPI**.
@@ -107,7 +95,7 @@ Because the assistant is publicly accessible, API usage is protected by a cost-b
 The current limit is:
 
 ```python
-MAXIMUM_DAILY_COST_PER_USER = 0.10
+MAXIMUM_DAILY_COST_PER_USER = 0.05
 ```
 
 Usage is tracked in MongoDB by IP address, including token consumption, cost, and the time the limit was reached.
